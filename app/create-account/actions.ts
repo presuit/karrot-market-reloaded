@@ -4,11 +4,8 @@ import {
   PASSWORD_REGEX,
   PASSWORD_REGEX_ERROR,
 } from "@/lib/constants";
+import db from "@/lib/db";
 import { z } from "zod";
-
-function checkUsername(username: string) {
-  return !username.includes("potato");
-}
 
 function checkPassword({
   password,
@@ -19,6 +16,32 @@ function checkPassword({
 }) {
   return password === confirmPassword;
 }
+
+const checkUniqueUserName = async (username: string) => {
+  const user = await db.user.findUnique({
+    where: {
+      username,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return !Boolean(user);
+};
+
+const checkUniqueEmail = async (email: string) => {
+  const userEmail = await db.user.findUnique({
+    where: {
+      email,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return !Boolean(userEmail);
+};
 
 const formSchema = z
   .object({
@@ -32,8 +55,12 @@ const formSchema = z
       .min(3, "way too short!!")
       .max(10, "That is too long!")
       .transform((username) => `${username}`)
-      .refine(checkUsername, "potato is not allowed!"),
-    email: z.string().email().toLowerCase(),
+      .refine(checkUniqueUserName, "This username is already taken"),
+    email: z
+      .string()
+      .email()
+      .toLowerCase()
+      .refine(checkUniqueEmail, "This email is already taken"),
     password: z
       .string()
       .min(PASSWORD_MIN_LENGTH)
@@ -53,11 +80,18 @@ export async function createAccount(prevState: any, formData: FormData) {
     confirmPassword: formData.get("confirmPassword"),
   };
 
-  const result = formSchema.safeParse(data);
+  const result = await formSchema.safeParseAsync(data);
 
   if (!result.success) {
     return result.error.flatten();
-  } else {
-    console.log(result.data);
   }
+
+  console.log(result.data);
+
+  // check if username is taken
+  // check if email is already used
+  // hash password
+  // save the user to db
+  // log the user in
+  // redirect "/home"
 }
