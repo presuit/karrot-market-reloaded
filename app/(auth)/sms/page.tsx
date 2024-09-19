@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionState, smsLogin } from "@/app/sms/actions";
+import { smsLogin } from "@/app/(auth)/sms/actions";
 import Button from "@/components/button";
 import Input from "@/components/input";
 import { useFormState } from "react-dom";
@@ -22,18 +22,18 @@ export default function SMSLogin() {
       <form action={dispatch} className="flex flex-col gap-5">
         {state.token ? (
           <Input
-            name="token"
             required
+            name="token"
             type="number"
             min={1_000_000}
-            max={9_999_999}
+            max={999_999_999}
             placeholder="Verification code"
             errors={state.error?.formErrors}
           />
         ) : (
           <Input
-            name="phone"
             required
+            name="phone"
             type="text"
             placeholder="Phone Number"
             errors={state.error?.formErrors}
