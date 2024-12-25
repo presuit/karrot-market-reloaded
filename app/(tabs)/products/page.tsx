@@ -1,6 +1,8 @@
 import ProductList from "@/components/product-list";
 import db from "@/lib/db";
+import { PlusIcon } from "@heroicons/react/24/solid";
 import { Prisma } from "@prisma/client";
+import Link from "next/link";
 
 export type InitialProducts = Prisma.PromiseReturnType<
   typeof getInitialProducts
@@ -29,6 +31,12 @@ export default async function Product() {
   return (
     <div>
       <ProductList initialProducts={initialProducts} />
+      <Link
+        href={"/products/add"}
+        className="fixed bottom-24 right-8 flex size-16 items-center justify-center rounded-full bg-orange-500 text-white transition hover:scale-95"
+      >
+        <PlusIcon className="size-10" />
+      </Link>
     </div>
   );
 }
