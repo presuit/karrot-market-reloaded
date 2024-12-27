@@ -5,11 +5,13 @@ import { UserIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { unstable_cache as NextCache, revalidateTag } from "next/cache";
 
 async function getIsOwner(userId: number) {
-  const session = await getSession();
+  // const session = await getSession();
 
-  return session.id === userId;
+  // return session.id === userId;
+  return false;
 }
 
 async function getProduct(id: number) {
@@ -27,6 +29,34 @@ async function getProduct(id: number) {
     },
   });
   return product;
+}
+
+const getCachedProduct = NextCache(getProduct, ["product-detail"], {
+  tags: ["product-detail"],
+});
+
+async function getProductTitle(id: number) {
+  const product = await db.product.findUnique({
+    where: {
+      id,
+    },
+    select: {
+      title: true,
+    },
+  });
+  return product;
+}
+
+const getCachedProductTitle = NextCache(getProductTitle, ["product-title"], {
+  tags: ["product-title"],
+});
+
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const product = await getProductTitle(Number(params.id));
+  const title = product?.title || "";
+  return {
+    title,
+  };
 }
 
 export default async function ProductDetail({
@@ -47,6 +77,11 @@ export default async function ProductDetail({
   }
 
   const isOwner = await getIsOwner(product.userId);
+
+  const revalidateProductTitle = async () => {
+    "use server";
+    revalidateTag("product-title");
+  };
 
   return (
     <div className="pb-40">
@@ -83,11 +118,13 @@ export default async function ProductDetail({
         <span className="text-lg font-semibold">
           {formatToWon(product.price)}원
         </span>
-        {isOwner ? (
+        {/* {isOwner ? ( */}
+        <form action={revalidateProductTitle}>
           <button className="rounded-md bg-red-500 px-5 py-2.5 text-white">
-            Delete Product
+            revalidate product title
           </button>
-        ) : null}
+        </form>
+        {/* ) : null} */}
         <Link
           className="rounded-md bg-orange-500 px-5 py-2.5 text-white"
           href={""}
@@ -97,4 +134,15 @@ export default async function ProductDetail({
       </div>
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  const products = await db.product.findMany({
+    select: {
+      id: true,
+    },
+  });
+  return products.map((product) => ({
+    id: product.id.toString(),
+  }));
 }
